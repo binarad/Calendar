@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"target": "ES2020", // Node 14+ supports ES2020
+		"module": "CommonJS", // Use CommonJS for Node
+		"esModuleInterop": true, // Allows default import from CommonJS modules
+		"moduleResolution": "node", // How TS looks up modules
+		"resolveJsonModule": true, // If you import JSON files
+
+		/* Node typings */
+		"types": ["node"],
+
+		/* Debug */
+		"sourceMap": true,
+
+		/* Strictness */
+		"strict": true,
+		"skipLibCheck": true
+	},
+	"include": ["src"],
+	"exclude": ["node_modules", "dist"]
+}
