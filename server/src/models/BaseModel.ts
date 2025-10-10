@@ -1,10 +1,10 @@
-import type Database from 'better-sqlite3'
+import type { Database } from 'sqlite'
 import { DB } from '../core/Database'
 
 export abstract class BaseModel {
-	protected db: Database.Database
+	protected dbPromise: Promise<Database>
 
 	constructor() {
-		this.db = DB.get()
+		this.dbPromise = DB.get()
 	}
 }
