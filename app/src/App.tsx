@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { EventApi, DateSelectArg } from '@fullcalendar/core'
 import { Sidebar } from './components/Sidebar'
 import { useCalendarHandlers } from './hooks/useCalendarHandlers'
@@ -84,12 +84,43 @@ export default function App() {
 		calendarRef: calendarRef,
 	})
 
-	// Notification.requestPermission().then(result => {
-	// 	console.log(result)
-	// })
-	// Notification example
-	// const img = './assets/react.svg'
-	// const notification = new Notification('HELLO', { body: "WASH YOUR ASS", icon: img})
+	useEffect(() => {
+		// ------ 1. Request notification permission on mount --------
+		if (Notification.permission !== 'granted') {
+			Notification.requestPermission()
+		}
+
+		// ----- 2. Connect to the server -----
+		// EventSource is the browser's built-in client for SSE
+		const eventSource = new EventSource('api/notifications')
+
+		// ----- 3. Handle incoming messages -----
+		eventSource.onmessage = event => {
+			// Parse data from the server
+			const reminder = JSON.parse(event.data)
+
+			// Check if permission is granted
+			if (Notification.permission === 'granted') {
+				// Show notification
+				new Notification(reminder.title, {
+					body: `Your event ${reminder.eventTitle}`,
+					icon: '../public/calendar-icon.png',
+				})
+			}
+		}
+
+		// Handle any errors with the connection
+		eventSource.onerror = err => {
+			console.error(`EventSource failed: ${err}`)
+			eventSource.close()
+		}
+
+		// ----- 4. Clean Up on Unmount -----
+		return () => {
+			console.log('Closing notification connection')
+			eventSource.close()
+		}
+	}, [])
 
 	return (
 		<div className='app'>

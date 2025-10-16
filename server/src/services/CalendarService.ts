@@ -130,6 +130,7 @@ export class CalendarService {
 						setTimeout(() => {
 							this.notifier.notifyReminder({
 								eventId,
+								eventTitle: event.title,
 								when: occDate.toISOString(),
 								minutesBefore: r.minutesBefore,
 							})

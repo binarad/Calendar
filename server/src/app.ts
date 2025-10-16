@@ -1,11 +1,13 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import { CalendarService } from './services/CalendarService'
+import { NotificationCenter } from './services/NotificationCenter'
 
 const app = express()
 app.use(bodyParser.json())
 
 const service = new CalendarService()
+const notifier = NotificationCenter.getInstance()
 
 app.get('/', (_req, res) => {
 	res.send('CALENDAR API')
@@ -144,6 +146,27 @@ app.get('/calendar.ics', async (_req, res) => {
 	} catch (e: any) {
 		res.status(400).json({ error: e.message })
 	}
+})
+
+app.get('/api/notifications', (req, res) => {
+	res.setHeader('Content-Type', 'text/event-stream')
+	res.setHeader('Cache-Control', 'no-cache')
+	res.setHeader('Connection', 'keep-alive')
+
+	res.flushHeaders() // flush the headers to establish SSE with client
+
+	const reminderListener = (payload: any) => {
+		res.write(`data: ${JSON.stringify(payload)}\n\n`)
+	}
+
+	notifier.on('reminder', reminderListener)
+	req.on('close', () => {
+		notifier.off('reminder', reminderListener)
+		res.end()
+		console.log('Client disconnected from notification stream')
+	})
+
+	console.log('Client connected to notification stream')
 })
 
 export default app

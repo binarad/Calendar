@@ -17,6 +17,7 @@ export class NotificationCenter extends EventEmitter {
 
 	notifyReminder(payload: {
 		eventId: number
+		eventTitle: string
 		when: string
 		minutesBefore: number
 	}) {
