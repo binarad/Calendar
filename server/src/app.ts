@@ -16,6 +16,13 @@ app.get('/events', async (_req, res) => {
 	res.json(events)
 })
 
+// Get 1 event by Event ID
+app.get('/events/:id', async (req, res) => {
+	const event = await service.getEvent(Number(req.params.id))
+	res.json(event)
+})
+
+// Post Event
 app.post('/events', async (req, res) => {
 	try {
 		const created = await service.createEvent(req.body)
@@ -27,7 +34,7 @@ app.post('/events', async (req, res) => {
 	}
 })
 
-// Update / Delete
+// Update / Delete Event
 app.put('/events/:id', async (req, res) => {
 	try {
 		const updated = await service.updateEvent(Number(req.params.id), req.body)
@@ -88,10 +95,24 @@ app.get('/events/:id/reminders', async (req, res) => {
 	}
 })
 
+// Delete all reminders
 app.delete('/events/:id/reminders', async (req, res) => {
 	try {
 		const eventId = Number(req.params.id)
 		await service['reminders'].deleteByEvent(eventId)
+		res.status(204).end()
+	} catch (e: any) {
+		res.status(400).json({ error: e.message })
+	}
+})
+
+// Delete reminder by ID
+app.delete('/events/:eventId/reminders/:reminderId', async (req, res) => {
+	try {
+		const eventId = Number(req.params.eventId)
+		const reminderId = Number(req.params.reminderId)
+
+		await service['reminders'].deleteByReminderID(eventId, reminderId)
 		res.status(204).end()
 	} catch (e: any) {
 		res.status(400).json({ error: e.message })

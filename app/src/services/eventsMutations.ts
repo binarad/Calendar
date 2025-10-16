@@ -1,4 +1,30 @@
+import { RecurrenceRuleFormData } from '../components/EventModal'
 import type { SelectedEvent } from '../types'
+
+export type CreateEventPayload = {
+	title: string
+	description: string | null
+	startTime: string
+	endTime: string | null
+	recurrence?: RecurrenceRuleFormData
+}
+
+export async function createEvent(
+	payload: CreateEventPayload
+): Promise<SelectedEvent> {
+	const res = await fetch('/api/events', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload),
+	})
+
+	if (!res.ok) {
+		const { error } = await res.json()
+		throw new Error(error || 'Failed to create event')
+	}
+
+	return await res.json()
+}
 
 export type UpdateEventPayload = Partial<{
 	title: string
@@ -16,7 +42,10 @@ export async function updateEvent(
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(payload),
 	})
-	if (!res.ok) throw new Error('Failed to update event')
+	if (!res.ok) {
+		const { error } = await res.json()
+		throw new Error(error || 'Failed to update event')
+	}
 	return await res.json()
 }
 

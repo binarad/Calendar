@@ -12,7 +12,7 @@
 		// "resolveJsonModule": true, // If you import JSON files
 
 		/* Node typings */
-		"types": ["node"],
+		"types": ["jest", "node"],
 
 		/* Debug */
 		"sourceMap": true

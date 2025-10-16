@@ -4,10 +4,13 @@ import {
 	RecurrenceRuleData,
 	RecurrenceRuleModel,
 } from '../models/RecurrenceRuleModel'
-import { RRule, Weekday } from 'rrule'
-import type { Options as RRuleOptions, Frequency } from 'rrule'
+import { RRule, Options as RRuleOptions } from 'rrule'
 import { NotificationCenter } from './NotificationCenter'
 import ical, { ICalCalendar } from 'ical-generator'
+import { DailyStrategy } from './strategies/DailyStrategy'
+import { WeeklyStrategy } from './strategies/WeeklyStrategy'
+import { MonthlyStrategy } from './strategies/MonthlyStrategy'
+import { IRecurrenceStrategy } from './strategies/IRecurrenceStrategy'
 
 export interface CreateEventInput extends Omit<EventData, 'id'> {
 	recurrence?: RecurrenceRuleData | null
@@ -56,6 +59,10 @@ export class CalendarService {
 		return this.events.getAll()
 	}
 
+	async getEvent(id: number): Promise<EventData | undefined> {
+		return this.events.getById(id)
+	}
+
 	async updateEvent(
 		id: number,
 		updates: Partial<EventData>
@@ -86,7 +93,11 @@ export class CalendarService {
 		const rule = await this.rules.getById(event.recurrenceRuleId)
 		if (!rule) return []
 
-		const rrule = new RRule(this.mapRule(rule, event.startTime))
+		const strategy = this.getRecurrenceStrategy(rule.freq)
+
+		const rruleOptions = strategy.createRRuleOptions(rule, event.startTime)
+
+		const rrule = new RRule(rruleOptions as RRuleOptions)
 		const dates = rrule.between(from, to, true)
 		return dates.map(d => d.toISOString())
 	}
@@ -222,55 +233,18 @@ export class CalendarService {
 		return cal
 	}
 
-	private mapRule(
-		rule: RecurrenceRuleData,
-		startTimeISO: string
-	): RRuleOptions {
-		const options: Partial<RRuleOptions> = {
-			dtstart: new Date(startTimeISO),
-			freq: this.mapFreq(rule.freq),
-			interval: rule.interval ?? 1,
-			wkst: RRule.MO,
-		}
-		if (rule.byday) {
-			options.byweekday = rule.byday
-				.split(',')
-				.map(s => this.parseWeekday(s.trim()))
-		}
-		if (rule.until) options.until = new Date(rule.until)
-		if (rule.count != null) options.count = rule.count
-		return options as RRuleOptions
-	}
-
-	private mapFreq(freq: RecurrenceRuleData['freq']): Frequency {
+	private getRecurrenceStrategy(
+		freq: RecurrenceRuleData['freq']
+	): IRecurrenceStrategy {
 		switch (freq) {
 			case 'DAILY':
-				return RRule.DAILY
+				return new DailyStrategy()
 			case 'WEEKLY':
-				return RRule.WEEKLY
+				return new WeeklyStrategy()
 			case 'MONTHLY':
-				return RRule.MONTHLY
+				return new MonthlyStrategy()
+			default:
+				throw new Error(`Unsupported recurrence frequency: ${freq}`)
 		}
-	}
-
-	private parseWeekday(label: string): Weekday {
-		const map: Record<string, Weekday> = {
-			MO: RRule.MO,
-			MON: RRule.MO,
-			TUE: RRule.TU,
-			TU: RRule.TU,
-			WED: RRule.WE,
-			WE: RRule.WE,
-			THU: RRule.TH,
-			TH: RRule.TH,
-			FRI: RRule.FR,
-			FR: RRule.FR,
-			SAT: RRule.SA,
-			SA: RRule.SA,
-			SUN: RRule.SU,
-			SU: RRule.SU,
-		}
-		const key = label.toUpperCase()
-		return map[key] ?? RRule.MO
 	}
 }

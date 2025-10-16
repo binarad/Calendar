@@ -1,13 +1,14 @@
 import { useCallback } from 'react'
-import type { EventApi, EventClickArg } from '@fullcalendar/core'
+import type { EventApi, EventClickArg, EventDropArg } from '@fullcalendar/core'
 import { createFetchEvents } from '../services/events'
 import { fetchEventDetails } from '../services/eventDetails'
 import { addReminder, deleteReminder } from '../services/reminders'
 import {
-	updateEvent,
 	deleteEvent as deleteEventApi,
+	updateEvent,
 } from '../services/eventsMutations'
 import type { Reminder, SelectedEvent } from '../types'
+import FullCalendar from '@fullcalendar/react'
 
 type Params = {
 	selectedEvent: SelectedEvent | null
@@ -17,6 +18,8 @@ type Params = {
 	setSelectedReminders: (r: Reminder[]) => void
 	setSelectedOccurrences: (o: string[]) => void
 	setSelectedOccurrence: (o: string | null) => void
+	onOpenEditModal?: () => void
+	calendarRef: React.RefObject<FullCalendar | null>
 }
 
 export function useCalendarHandlers({
@@ -27,6 +30,8 @@ export function useCalendarHandlers({
 	setSelectedReminders,
 	setSelectedOccurrences,
 	setSelectedOccurrence,
+	onOpenEditModal,
+	calendarRef,
 }: Params) {
 	const fetchEvents = useCallback(createFetchEvents(), [])
 
@@ -86,65 +91,25 @@ export function useCalendarHandlers({
 
 	const handleEditEvent = useCallback(async () => {
 		if (!selectedEvent) return
-		const scope = selectedOccurrence
-			? prompt(
-					'Edit this occurrence or the whole series? (type: occurrence/series)',
-					'series'
-			  )
-			: 'series'
-		if (!scope) return
-		if (scope !== 'series' && scope !== 'occurrence') return
-		if (scope === 'occurrence') {
-			alert(
-				'Editing a single occurrence is not supported by the backend yet. Will update the series instead.'
-			)
-		}
-		const newTitle = prompt('Title', selectedEvent.title) ?? selectedEvent.title
-		const newDescription = prompt(
-			'Description',
-			selectedEvent.description ?? ''
-		)
-		const newStart =
-			prompt('Start ISO (YYYY-MM-DDTHH:mm:ssZ)', selectedEvent.startTime) ??
-			selectedEvent.startTime
-		const newEnd = prompt('End ISO (optional)', selectedEvent.endTime ?? '')
-		try {
-			const updated = await updateEvent(selectedEvent.id, {
-				title: newTitle,
-				description:
-					newDescription && newDescription.trim() !== ''
-						? newDescription
-						: null,
-				startTime: newStart,
-				endTime: newEnd && newEnd.trim() !== '' ? newEnd : null,
-			})
-			setSelectedEvent(updated)
-		} catch (e) {
-			console.error(e)
-		}
-	}, [selectedEvent, selectedOccurrence, setSelectedEvent])
+
+		onOpenEditModal?.()
+	}, [selectedEvent, onOpenEditModal])
 
 	const handleDeleteEvent = useCallback(async () => {
 		if (!selectedEvent) return
-		const scope = selectedOccurrence
-			? prompt(
-					'Delete this occurrence or the whole series? (type: occurrence/series)',
-					'series'
-			  )
-			: 'series'
-		if (!scope) return
-		if (scope !== 'series' && scope !== 'occurrence') return
-		if (scope === 'occurrence') {
-			alert(
-				'Deleting a single occurrence is not supported by the backend yet. Will delete the series instead.'
-			)
-		}
+
+		const confirmed = window.confirm(
+			'Are you sure you want to delete this event series?'
+		)
+		if (!confirmed) return
 		try {
 			await deleteEventApi(selectedEvent.id)
 			setSelectedEvent(null)
 			setSelectedReminders([])
 			setSelectedOccurrences([])
 			setSelectedOccurrence(null)
+
+			calendarRef.current?.getApi().refetchEvents()
 		} catch (e) {
 			console.error(e)
 		}
@@ -155,8 +120,23 @@ export function useCalendarHandlers({
 		setSelectedReminders,
 		setSelectedOccurrences,
 		setSelectedOccurrence,
+		calendarRef,
 	])
 
+	const handleEventDrop = useCallback(async (dropInfo: EventDropArg) => {
+		try {
+			await updateEvent(Number(dropInfo.event.id), {
+				startTime: dropInfo.event.startStr,
+				endTime: dropInfo.event.endStr,
+			})
+
+			console.log(`Event with ID: ${dropInfo.event.id} updated successfully`)
+		} catch (e: any) {
+			console.error(e)
+			alert(`Failed to update event: ${e.message}`)
+			dropInfo.revert()
+		}
+	}, [])
 	const handleEvents = useCallback(
 		(events: EventApi[]) => {
 			setCurrentEvents(events)
@@ -173,5 +153,6 @@ export function useCalendarHandlers({
 		handleEditEvent,
 		handleDeleteEvent,
 		handleEvents,
+		handleEventDrop,
 	}
 }

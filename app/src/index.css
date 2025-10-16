@@ -38,8 +38,8 @@ b {
 .app-sidebar {
 	width: 300px;
 	line-height: 1.5;
-	background: #eaf9ff;
-	border-right: 1px solid #d3e2e8;
+	background: #eeeeee;
+	border-left: 1px solid #b3b3b3;
 	max-height: 100vh;
 	overflow: auto;
 }

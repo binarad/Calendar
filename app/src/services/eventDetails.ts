@@ -1,16 +1,14 @@
 import type { SelectedEvent, Reminder } from '../types'
 
-export async function fetchEventById(id: number): Promise<SelectedEvent | null> {
-	const res = await fetch('/api/events')
+export async function fetchEventById(
+	id: number
+): Promise<SelectedEvent | null> {
+	const res = await fetch(`/api/events/${id}`)
 	if (!res.ok) throw new Error('Failed to load events')
-	const all: Array<{
-		id: number
-		title: string
-		description?: string | null
-		startTime: string
-		endTime?: string | null
-	}> = await res.json()
-	return all.find(e => e.id === id) || null
+	{
+		if (res.status === 404) throw new Error('Failed to load event details')
+	}
+	return await res.json()
 }
 
 export async function fetchRemindersForEvent(id: number): Promise<Reminder[]> {
@@ -40,12 +38,11 @@ export async function fetchEventDetails(id: number): Promise<{
 }> {
 	const from = new Date()
 	const to = new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000)
-	const [selectedEvent, selectedReminders, selectedOccurrences] = await Promise.all([
-		fetchEventById(id),
-		fetchRemindersForEvent(id),
-		fetchOccurrencesForEvent(id, from, to),
-	])
+	const [selectedEvent, selectedReminders, selectedOccurrences] =
+		await Promise.all([
+			fetchEventById(id),
+			fetchRemindersForEvent(id),
+			fetchOccurrencesForEvent(id, from, to),
+		])
 	return { selectedEvent, selectedReminders, selectedOccurrences }
 }
-
-

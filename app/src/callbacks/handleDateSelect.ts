@@ -22,6 +22,11 @@ export async function handleDateSelect(
 					endTime: selectInfo.endStr ?? null,
 				}),
 			})
+
+			if (res.status === 409) {
+				const { error } = await res.json()
+				throw new Error(error)
+			}
 			if (!res.ok) throw new Error('Failed to create event')
 			const created: {
 				id: number
@@ -36,9 +41,9 @@ export async function handleDateSelect(
 				end: created.endTime ?? undefined,
 				allDay: selectInfo.allDay,
 			})
-		} catch (e) {
+		} catch (e: any) {
 			console.error(e)
-			alert('Failed to save event')
+			alert(`Failed to save event: ${e.message}`)
 		}
 	}
 }

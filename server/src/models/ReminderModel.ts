@@ -29,4 +29,13 @@ export class ReminderModel extends BaseModel {
 		const db = await this.dbPromise
 		await db.run('DELETE FROM Reminder WHERE eventId = ?', eventId)
 	}
+
+	async deleteByReminderID(eventId: number, reminderId: number) {
+		const db = await this.dbPromise
+		await db.run(
+			'DELETE FROM Reminder WHERE eventId = ? and id = ?',
+			eventId,
+			reminderId
+		)
+	}
 }

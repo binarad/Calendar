@@ -8,6 +8,7 @@ import FormControl from '@mui/material/FormControl'
 import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import { useState } from 'react'
+import RemindersList from './RemindersList'
 
 type SidebarProps = {
 	currentEvents: EventApi[]
@@ -37,6 +38,24 @@ function renderSidebarEvent(event: EventApi) {
 	)
 }
 
+async function handleReminderDelete(eventId: number, reminderId: number) {
+	const res = await fetch(`/api/events/${eventId}/reminders/${reminderId}`, {
+		method: 'DELETE',
+	})
+	if (!res.ok) {
+		console.error(
+			`Failed to DELETE Reminder  with ID: ${reminderId} for event with ID: ${eventId}`
+		)
+		return
+	}
+
+	console.log(
+		`Reminder with ID ${reminderId} for Event with ID: ${eventId} deleted successfully`
+	)
+
+	// Call parent callback to update UI
+}
+
 export function Sidebar({
 	currentEvents,
 	selectedEvent,
@@ -53,11 +72,11 @@ export function Sidebar({
 
 	return (
 		<div className='app-sidebar'>
-			<div className='sidebar-all-events'>
+			{/* <div className='sidebar-all-events'>
 				<h2>All Events ({currentEvents.length})</h2>
 				<ul>{currentEvents.map(renderSidebarEvent)}</ul>
-			</div>
-			{selectedEvent && (
+			</div> */}
+			{selectedEvent ? (
 				<div className='sidebar-event-details'>
 					<h2>Event Details</h2>
 					<div>
@@ -112,7 +131,9 @@ export function Sidebar({
 							</div>
 						) : null}
 						<div style={{ marginTop: 12 }} className='sidebar-reminders'>
-							<b>Reminders</b>
+							<h1>
+								<b>Reminder</b>{' '}
+							</h1>
 							<div style={{ marginTop: 8 }}>
 								<FormControl
 									id='form-root'
@@ -216,6 +237,12 @@ export function Sidebar({
 							</ul>
 						</div>
 					</div>
+				</div>
+			) : (
+				<div className='sidebar-all-events'>
+					<RemindersList />
+					{/* <h2>All Events ({currentEvents.length})</h2>
+					<ul>{currentEvents.map(renderSidebarEvent)}</ul> */}
 				</div>
 			)}
 		</div>
